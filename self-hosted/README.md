@@ -63,8 +63,14 @@ npx tsx scripts/validation/providers/validate.ts # sanity-check providers
 docker compose -f self-hosted/docker-compose.yaml --env-file self-hosted/.env up -d
 ```
 
-Then add `nginx.conf`'s server blocks to the Hetzner nginx, issue certs for
-`nango.workmode.now` + `connect.nango.workmode.now`, and reload nginx.
+Then front it with the existing `workmode-nginx-1` (see `nginx.conf` — one 443
+block, Connect UI is served by the main server under `/connect`, no separate
+subdomain), issue a dedicated cert for `nango.workmode.now`, and **restart** the
+nginx container (a bind-mounted config needs restart, not just reload).
+
+**Status: deployed and public at https://nango.workmode.now** (dashboard + API +
+Connect UI), behind a dedicated Let's Encrypt cert. Accurate provider + logo
+verified live.
 
 ## Configure the Accurate integration
 
