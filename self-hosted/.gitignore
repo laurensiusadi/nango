@@ -1,0 +1,6 @@
+# Generated merge output — rebuilt by merge-providers.mjs on every deploy.
+build/
+# Postgres data volume.
+nango-data/
+# Real secrets.
+.env

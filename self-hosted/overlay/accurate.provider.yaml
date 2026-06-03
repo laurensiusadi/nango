@@ -1,0 +1,38 @@
+# Custom provider overlay: Accurate Online (accounting/ERP, Indonesia).
+#
+# This block is NOT part of upstream NangoHQ/nango. It is merged into the stock
+# providers.yaml at deploy time (see ../merge-providers.mjs) so that `git pull`
+# from upstream never conflicts with it.
+#
+# Auth verified working via the self-hosted dashboard "Test Integration" flow.
+# token_request_auth_method: basic is a valid schema enum and Accurate's token
+# endpoint accepts HTTP Basic.
+#
+# Validate after editing:
+#   npx tsx scripts/validation/providers/validate.ts
+accurate:
+    display_name: Accurate Online
+    categories:
+        - accounting
+        - erp
+        - invoicing
+    auth_mode: OAUTH2
+    authorization_url: https://account.accurate.id/oauth/authorize
+    token_url: https://account.accurate.id/oauth/token
+    token_request_auth_method: basic
+    authorization_params:
+        response_type: code
+    token_params:
+        grant_type: authorization_code
+    refresh_params:
+        grant_type: refresh_token
+    proxy:
+        base_url: https://account.accurate.id/api
+        headers:
+            accept: application/json
+        verification:
+            method: GET
+            endpoints:
+                - /db-list.do
+    docs: https://nango.dev/docs/api-integrations/accurate
+    setup_guide_url: https://nango.dev/docs/api-integrations/accurate/how-to-register-your-own-accurate-api-oauth-app
