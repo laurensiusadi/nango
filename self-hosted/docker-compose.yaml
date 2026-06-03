@@ -65,8 +65,12 @@ services:
             - './overlay/accurate.svg:/app/nango/packages/webapp/dist/images/template-logos/accurate.svg:ro'
         restart: always
         ports:
-            - '${SERVER_PORT:-3003}:${SERVER_PORT:-3003}'
-            - '${CONNECT_UI_PORT:-3009}:${CONNECT_UI_PORT:-3009}'
+            # Bind to the Docker bridge gateway (not 0.0.0.0) so the port is NOT
+            # exposed to the public internet — the existing workmode nginx reaches
+            # it via 172.17.0.1 (same pattern as langfuse/supabase). Set
+            # BIND_ADDR=0.0.0.0 only if you want it directly reachable.
+            - '${BIND_ADDR:-172.17.0.1}:${SERVER_PORT:-3003}:${SERVER_PORT:-3003}'
+            - '${BIND_ADDR:-172.17.0.1}:${CONNECT_UI_PORT:-3009}:${CONNECT_UI_PORT:-3009}'
         depends_on:
             - nango-db
             - nango-redis
