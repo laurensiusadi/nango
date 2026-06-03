@@ -36,7 +36,10 @@ services:
             - SERVER_PORT=${SERVER_PORT:-3003}
             - NANGO_SERVER_URL=http://localhost:3003
             - NANGO_PUBLIC_SERVER_URL=http://localhost:3003
-            - NANGO_PUBLIC_CONNECT_URL=http://localhost:3003/connect
+            # Connect UI is the standalone static server on :3009 (no X-Frame-Options),
+            # so it can be iframed cross-origin by the app — mirrors Cloud's connect.nango.dev.
+            - NANGO_PUBLIC_CONNECT_URL=http://localhost:3009
+            - NANGO_CONNECT_UI_PORT=${CONNECT_UI_PORT:-3009}
             - NANGO_REDIS_URL=redis://host.docker.internal:6399
             - FLAG_AUTH_ENABLED=${FLAG_AUTH_ENABLED:-false}
             - FLAG_SERVE_CONNECT_UI=true
@@ -49,4 +52,7 @@ services:
             - './overlay/accurate.svg:/app/nango/packages/webapp/dist/images/template-logos/accurate.svg:ro'
         ports:
             - '127.0.0.1:${SERVER_PORT:-3003}:${SERVER_PORT:-3003}'
+            # Standalone Connect UI (static server, no X-Frame-Options) — must be
+            # a SEPARATE origin from the API so it can be iframed by the app.
+            - '127.0.0.1:${CONNECT_UI_PORT:-3009}:${CONNECT_UI_PORT:-3009}'
         restart: unless-stopped
