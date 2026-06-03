@@ -41,8 +41,12 @@ if ! git merge --no-edit upstream/master; then
 fi
 git push origin self-host || echo "   (push to fork skipped/failed — continuing deploy)"
 
-echo "==> [2/5] Merging Accurate overlay onto fresh providers.yaml (validates overlay)..."
-node "$SELF_HOSTED/merge-providers.mjs"
+echo "==> [2/5] Merging Accurate overlay onto fresh providers.yaml..."
+if command -v node >/dev/null 2>&1; then
+    node "$SELF_HOSTED/merge-providers.mjs"          # host node: also schema-validates
+else
+    bash "$SELF_HOSTED/merge-in-docker.sh"           # server: merge via throwaway container
+fi
 
 echo "==> [3/5] Resolving image tag..."
 if [[ "${1:-}" != "" ]]; then
@@ -56,7 +60,11 @@ fi
 echo "    -> $NEW_TAG"
 
 echo "==> [4/5] Cross-checking full upstream provider set..."
-npx tsx scripts/validation/providers/validate.ts >/dev/null && echo "    upstream providers OK"
+if command -v node >/dev/null 2>&1; then
+    npx tsx scripts/validation/providers/validate.ts >/dev/null && echo "    upstream providers OK"
+else
+    echo "    (no host node — overlay was validated pre-commit; skipping full check)"
+fi
 
 echo "==> [5/5] Pulling + restarting..."
 # Update the tag in .env (portable in-place sed for Linux + macOS).
