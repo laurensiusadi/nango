@@ -52,9 +52,12 @@ echo "==> [3/5] Resolving image tag..."
 if [[ "${1:-}" != "" ]]; then
     NEW_TAG="$1"
 else
-    # Latest non-floating tag from Docker Hub (filters out 'hosted'/'latest'/'edge').
+    # Latest pinnable version tag. Self-hosted images are tagged
+    # 'hosted-{version}' (e.g. hosted-0.70.6) and 'hosted-{sha}'. We want the
+    # newest 'hosted-<numeric version>', skipping the floating 'hosted' and the
+    # per-commit sha tags.
     NEW_TAG=$(curl -fsSL "https://hub.docker.com/v2/repositories/nangohq/nango-server/tags?page_size=50&ordering=last_updated" \
-        | node -e 'const d=JSON.parse(require("fs").readFileSync(0));const t=d.results.map(r=>r.name).find(n=>/^[0-9]/.test(n)||/^managed-/.test(n));process.stdout.write(t||"")')
+        | grep -oE '"name":"hosted-[0-9][0-9.]*"' | sed 's/"name":"//;s/"//' | head -1)
     [[ -z "$NEW_TAG" ]] && { echo "!! Could not resolve a release tag; pass one explicitly."; exit 1; }
 fi
 echo "    -> $NEW_TAG"
