@@ -1,0 +1,52 @@
+# Local self-host stack — runs the SAME stock image + bind-mounts as production,
+# so "works locally → works deployed". Parity with docker-compose.yaml, but:
+#   - reuses your EXISTING local dev DB/redis (so your google/accurate
+#     integrations + connections are already there)
+#   - binds to localhost and uses localhost URLs
+#   - uses the same NANGO_ENCRYPTION_KEY as the dev .env so stored creds decrypt
+#
+# Run:
+#   node self-hosted/merge-providers.mjs            # regenerate build/providers.yaml
+#   docker compose -f self-hosted/docker-compose.local.yaml --env-file self-hosted/.env.local up -d
+#
+# Dashboard: http://localhost:3003  (Connect UI under /connect)
+#
+# NOTE: this connects to the dev backing services started by
+# dev/docker-compose.dev.yaml (nango-db on host :5455, nango-redis on :6399).
+# Start those first if they aren't running. Stop the from-source dev server
+# (the tsx process on :3003) before running this, or change SERVER_PORT.
+
+services:
+    nango-server:
+        image: nangohq/nango-server:${NANGO_IMAGE_TAG:-hosted}
+        container_name: nango-server-local
+        platform: linux/amd64
+        extra_hosts:
+            # Lets the container reach the dev DB/redis published on host ports.
+            - 'host.docker.internal:host-gateway'
+        environment:
+            - NANGO_ENCRYPTION_KEY
+            - NANGO_DB_USER
+            - NANGO_DB_PASSWORD
+            - NANGO_DB_HOST=host.docker.internal
+            - NANGO_DB_PORT=5455
+            - NANGO_DB_NAME
+            - NANGO_DB_SSL=false
+            - RECORDS_DATABASE_URL=postgresql://${NANGO_DB_USER}:${NANGO_DB_PASSWORD}@host.docker.internal:5455/${NANGO_DB_NAME}
+            - SERVER_PORT=${SERVER_PORT:-3003}
+            - NANGO_SERVER_URL=http://localhost:3003
+            - NANGO_PUBLIC_SERVER_URL=http://localhost:3003
+            - NANGO_PUBLIC_CONNECT_URL=http://localhost:3003/connect
+            - NANGO_REDIS_URL=redis://host.docker.internal:6399
+            - FLAG_AUTH_ENABLED=${FLAG_AUTH_ENABLED:-false}
+            - FLAG_SERVE_CONNECT_UI=true
+            - LOG_LEVEL=${LOG_LEVEL:-info}
+            - CSP_REPORT_ONLY=true
+            - NANGO_LOGS_ENABLED=false
+        volumes:
+            # Same bind-mounts as production — accurate provider + logo.
+            - './build/providers.yaml:/app/nango/packages/providers/providers.yaml:ro'
+            - './overlay/accurate.svg:/app/nango/packages/webapp/dist/images/template-logos/accurate.svg:ro'
+        ports:
+            - '127.0.0.1:${SERVER_PORT:-3003}:${SERVER_PORT:-3003}'
+        restart: unless-stopped

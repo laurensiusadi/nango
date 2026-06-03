@@ -4,3 +4,4 @@ build/
 nango-data/
 # Real secrets.
 .env
+.env.local

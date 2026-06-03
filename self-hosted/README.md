@@ -72,6 +72,32 @@ nginx container (a bind-mounted config needs restart, not just reload).
 Connect UI), behind a dedicated Let's Encrypt cert. Accurate provider + logo
 verified live.
 
+## Run the deployed image LOCALLY (parity testing)
+
+Run the **same stock image + bind-mounts** locally so "works locally → works
+deployed". Uses `docker-compose.local.yaml`, pointed at the dev backing DB/redis
+(`dev/docker-compose.dev.yaml`) so your existing integrations + connections are
+already there.
+
+```bash
+# 1. Ensure dev backing services are up (nango-db on :5455, nango-redis on :6399)
+docker compose -f dev/docker-compose.dev.yaml -f dev/docker-compose.override.yaml up -d nango-db nango-redis
+# 2. Stop the from-source dev server if running (frees :3003)
+# 3. Configure env (encryption key must match the dev .env)
+cp self-hosted/.env.local.example self-hosted/.env.local   # then fill NANGO_ENCRYPTION_KEY
+# 4. Generate merged providers + run
+node self-hosted/merge-providers.mjs
+docker compose -f self-hosted/docker-compose.local.yaml --env-file self-hosted/.env.local up -d
+```
+
+Dashboard at http://localhost:3003 (Connect UI under `/connect`).
+
+> Why this matters: the from-source dev server loads the **upstream**
+> providers.yaml (no `accurate`), so any stored `accurate` integration crashes
+> the Integrations page with `providers['accurate']` undefined. The self-host
+> image loads the **merged** providers.yaml (bind-mounted), exactly like prod —
+> so it doesn't crash and behaves identically to the deployed instance.
+
 ## Configure the Accurate integration
 
 `providers.yaml` only makes Accurate *available*. In the dashboard
